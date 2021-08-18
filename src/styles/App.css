@@ -72,4 +72,13 @@
 
 .navbar__links {
     margin-left: auto;
+    /*background-color: orangered;*/
+}
+
+.navbar__links a {
+    color: teal;
+    text-decoration: none;
+    padding: 5px;
+    border: 1px solid teal;
+    margin-right: 5px;
 }

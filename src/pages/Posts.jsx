@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react'
+import React, {useEffect, useRef, useState} from 'react'
 import '../styles/App.css'
 import {usePosts} from "../hooks/usePost";
 import {useFetching} from "../hooks/useFetching";
@@ -11,6 +11,8 @@ import PostList from "../components/PostList";
 import Loader from "../components/UI/Loader/Loader";
 import Pagination from "../components/UI/Pagination/Pagination";
 import PostForm from "../components/PostForm";
+import {useObserver} from "../hooks/useObserver";
+import MySelect from "../components/UI/select/MySelect";
 
 
 function Posts() {
@@ -23,14 +25,18 @@ function Posts() {
     const [page, setPage] = useState(1)
     const [fetchPosts, isPostLoading, postError] = useFetching(async () => {
         const response = await PostService.getAll(limit, page)
-        setPosts(response.data)
+        setPosts([...posts, ...response.data])
         const totalCount = response.headers['x-total-count']
         setTotalPage(getPageCount(totalCount, limit))
+    })
+    const lastElement = useRef()
+    useObserver(lastElement, page < totalPages, isPostLoading, () => {
+        setPage(page + 1)
     })
 
     useEffect(() => {
         fetchPosts()
-    }, [page])
+    }, [page, limit])
 
     const createPost = (newPost) => {
         setPosts([...posts, newPost]);
@@ -53,11 +59,30 @@ function Posts() {
                 <PostForm create={createPost}/>
             </MyModal>
             <hr style={{margin: '15px 0'}}/>
-            <PostFilter filter={filter} setFilter={setFilter}/>
-            {postError && <h1>Произошла ошибка ${postError}</h1>}
-            {isPostLoading
-                ? <div style={{display: 'flex', justifyContent: 'center', marginTop: '50px'}}><Loader/></div>
-                : <PostList remove={removePost} posts={sortedAndSearchedPosts} title="Список Pro JS"/>
+            <PostFilter
+                filter={filter}
+                setFilter={setFilter}
+            />
+            <hr style={{margin: '15px 0'}}/>
+            <MySelect
+                value={limit}
+                onChange={value => setLimit(value)}
+                defaultValue='Количество элементов на странице'
+                options={[
+                    {value: 5, name: '5'},
+                    {value: 10, name: '10'},
+                    {value: 15, name: '15'},
+                    {value: -1, name: 'Показать все'}
+                ]}
+            />
+            {postError &&
+            <h1>Произошла ошибка ${postError}</h1>
+            }
+            <PostList remove={removePost} posts={sortedAndSearchedPosts} title="Список Pro JS"/>
+            <div ref={lastElement} style={{height: 20, background: 'red'}}></div>
+            {isPostLoading &&
+            <div style={{display: 'flex', justifyContent: 'center', marginTop: '50px'}}><Loader/></div>
+
             }
             <Pagination
                 totalPages={totalPages}
